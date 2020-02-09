@@ -14,6 +14,29 @@ const app=express();
 
 app.use(bodyParser.json());
 
+
+const events=eventIds=>{
+    return Event.find({_id:{$in: eventIds}})
+    .then(events=>{
+        return events.map(event=>{
+            return {...event._doc, _id: event.id, creator:user.bind(this, event._doc.creator)}
+        });
+    })
+    .catch(err=>{
+        throw err;
+    });
+};
+
+const user=userId=>{
+    return User.findById(userId)
+    .then(user=>{
+        return {...user._doc, _id: user.id, createdEvents: events.bind(this, user._doc.createdEvents)}
+    })
+    .catch(err=>{
+        throw err;
+    });
+};
+
 app.use('/graphql',graphqlHttp({
     schema: buildSchema(`
         type Event{
@@ -22,11 +45,13 @@ app.use('/graphql',graphqlHttp({
             description: String!
             price: Float!
             date: String!
+            creator: User!
         }
         type User{
             _id: ID!
             email: String!
             password: String
+            createdEvents: [Event!]
         }
         input EventInput{
             title: String!
@@ -57,9 +82,13 @@ app.use('/graphql',graphqlHttp({
     rootValue:{
         events: () => {
             return Event.find()
+                // .populate('creator')            //populate function is used to get the data of all feild from user by mongoose relation mapping.
                 .then( events =>{
                 return events.map(event => {
-                    return { ...event._doc, _id: event._doc._id.toString() }; // we can directly event.id which is database property.
+                    return { ...event._doc, _id: event._doc._id.toString(),
+                            creator: user.bind(this, event._doc.creator)
+                    
+                    }; // we can directly event.id which is database property for _id.
                 });
                 })
                 .catch(err=>{
@@ -79,7 +108,8 @@ app.use('/graphql',graphqlHttp({
             return event   // this is a promise funciton as first graphql show finish its valid operation and then to the save it to database
             .save()
             .then(result=>{
-                createdEvent= {...result._doc, _id:result._doc._id.toString()};                    //to get all the meta data and results of the return statement    
+                createdEvent= {...result._doc, _id:result._doc._id.toString(), 
+                            creator: user.bind(this, result._doc.creator)};                    //to get all the meta data and results of the return statement    
                 return User.findById('5e3fb2e53a46516f18e206dd');
             })
             .then(user=>{
