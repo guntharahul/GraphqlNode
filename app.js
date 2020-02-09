@@ -75,20 +75,22 @@ app.use('/graphql',graphqlHttp({
                 date: new Date(args.eventInput.date),
                 creator: '5e3fb2e53a46516f18e206dd'
             })
+            let createdEvent;
             return event   // this is a promise funciton as first graphql show finish its valid operation and then to the save it to database
             .save()
             .then(result=>{
+                createdEvent= {...result._doc, _id:result._doc._id.toString()};                    //to get all the meta data and results of the return statement    
                 return User.findById('5e3fb2e53a46516f18e206dd');
-                console.log(result);
-                return {...result._doc, _id:result._doc._id.toString()};  //to get all the meta data and results of the return statement    
             })
             .then(user=>{
-                if(user){
-                    console.log("User alredy exists, please try a different email");
-                    throw new error("User alredy exists, please try a different email");
+                if(!user){
+                    throw new error("User does not exists");
                 }
                 user.createdEvents.push(event);
                 return user.save();
+            })
+            .then(result=>{
+                return createdEvent;
             })
             .catch(err=>{
                 console.log(err);
@@ -99,7 +101,6 @@ app.use('/graphql',graphqlHttp({
             return User.findOne({email:args.userInput.email})
             .then(user=>{
                 if(user){
-                    console.log("User alredy exists, please try a different email");
                     throw new error("User alredy exists, please try a different email");
                 }
                 return bcrypt.hash(args.userInput.password,12)
