@@ -20,6 +20,20 @@ const events = async eventIds => {
     }
 };
 
+const singleEvent=async eventId=>{
+    try{
+        const event=await Event.findById(eventId);
+        return {...event._doc,
+                _id:event.id,
+                creator:user.bind(this, event._doc.creator)
+            }
+    }
+    catch(err){
+        console.log(err);
+        throw err;
+    }
+}
+
 const user = async userId=>{
     try{
     const user= await User.findById(userId)
@@ -60,6 +74,8 @@ module.exports={
                 return{
                     ...booking._doc,
                     _id: booking._doc._id.toString(),
+                    user:user.bind(this,booking._doc.user),
+                    event:singleEvent.bind(this,booking._doc.event),
                     createdAt:new Date(booking._doc.createdAt).toISOString(),
                     updatedAt:new Date(booking._doc.updatedAt).toISOString(),
                 };
@@ -121,8 +137,36 @@ module.exports={
         }
     },
     bookEvent:async (args) => {
+        const fetchedEvent=await Event.findOne({_id:args.eventId});
         const booking=new Booking({
-            
-        })
+            user:'5e46d3a9b7594a74d895711a',
+            event:fetchedEvent
+        });
+        const result=await booking.save();
+        return {...result._doc,
+                _id:result.id,
+                user: user.bind(this, booking._doc.user),
+                event: singleEvent.bind(this, booking._doc.event),
+                createdAt:new Date(booking._doc.createdAt).toISOString(),
+                updatedAt:new Date(booking._doc.updatedAt).toISOString(),
+            };
+    },
+    cancelBooking: async (args)=>{
+        try{
+            const booking=await Booking.findById(args.bookingId).populate('event');
+            const event=
+                {
+                    ...booking.event._doc,
+                    _id:booking.event._doc.id,
+                    creator: user.bind(this, booking.event._doc.creator)
+                }
+            await Booking.deleteOne({_id:args.bookingId});
+            console.log(event);
+            return event;
+        }
+        catch(err){
+            console.log(err);
+            throw err;
+        }
     }
 }
