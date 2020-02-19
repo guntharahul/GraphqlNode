@@ -1,6 +1,7 @@
 const bcrypt=require('bcryptjs')
 const Event=require('../../models/event');
 const User=require('../../models/user');
+const Booking= require('../../models/booking');
 
 const events = async eventIds => {
     try{
@@ -52,6 +53,22 @@ module.exports={
                 throw err;
             }
     },
+    bookings:async()=>{
+        try{
+            const bookings=await Booking.find();
+            return bookings.map(booking=>{
+                return{
+                    ...booking._doc,
+                    _id: booking._doc._id.toString(),
+                    createdAt:new Date(booking._doc.createdAt).toISOString(),
+                    updatedAt:new Date(booking._doc.updatedAt).toISOString(),
+                };
+            });
+        }catch(err){
+            console.log(err);
+            throw err;
+        }
+    },
     createEvent: async (args) =>{
         const event=new Event({
             title: args.eventInput.title,
@@ -94,11 +111,18 @@ module.exports={
             });
             const result= await user.save();
             console.log(result);
-            return {...result._doc,password:null,_id:result._doc._id.toString()}    //password is set to null, because it should not be retrieved
+            return {
+                    ...result._doc,password:null,
+                    _id:result._doc._id.toString()}    //password is set to null, because it should not be retrieved
         }
             catch(err){
             console.log(err);
             throw err;
         }
+    },
+    bookEvent:async (args) => {
+        const booking=new Booking({
+            
+        })
     }
 }
